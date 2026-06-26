@@ -29,21 +29,61 @@ const colorImageMap: Record<string, string> = {
 
 const STEP_LABELS = ["Konfiguracja", "Oświetlenie", "Zabudowy boczne", "Dodatki", "Wycena"]
 
+const rodzajeZadaszen = [
+  { id: "przyscienne", name: "Przyścienne" },
+  { id: "wolnostojace", name: "Wolnostojące" },
+]
+
+const rodzajeDachu = [
+  { id: "szklo", name: "Szkło" },
+  { id: "poliweglan", name: "Poliwęglan" },
+  { id: "panel-nieprzezierny", name: "Panel nieprzezierny" },
+  { id: "inne", name: "Inne" },
+]
+
+const oswietlenieZadaszenia = [
+  {
+    id: "liniowe-krokwie",
+    name: "Liniowe w krokwiach",
+    subOptions: [
+      { id: "biale-zimny", name: "Białe – zimny" },
+      { id: "biale-neutralny", name: "Białe – neutralny" },
+      { id: "biale-cieply", name: "Białe – ciepły" },
+      { id: "rgb", name: "RGB" },
+    ],
+  },
+  {
+    id: "punktowe-krokwie",
+    name: "Punktowe w krokwiach",
+    subOptions: [
+      { id: "biale-zimny", name: "Białe – zimny" },
+      { id: "biale-neutralny", name: "Białe – neutralny" },
+      { id: "biale-cieply", name: "Białe – ciepły" },
+    ],
+  },
+]
+
+const dodatkiZadaszenia = [
+  { id: "promiennik-ciepla", name: "Promiennik ciepła", desc: "Ogrzewanie tarasu 2 kW" },
+  { id: "costam1", name: "COŚTAM1", desc: "Opcjonalny dodatek 1" },
+  { id: "costam2", name: "COŚTAM2", desc: "Opcjonalny dodatek 2" },
+]
+
 // ─── Main Configurator ───────────────────────────────────────────────────────
 
-export function Configurator({ service }: { service: Service }) {
+export function ZadaszeniaConfigurator({ service }: { service: Service }) {
   const [step, setStep] = useState(1)
   const [submitted, setSubmitted] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
 
   // Step 1
-  const [roofId, setRoofId] = useState(roofTypes[0].id)
-  const [orientationId, setOrientationId] = useState(orientations[0].id)
+  const [rodzajId, setRodzajId] = useState(rodzajeZadaszen[0].id)
   const [width, setWidth] = useState(400)
   const [depth, setDepth] = useState(300)
-  const [height, setHeight] = useState(250)
+  const [height1, setHeight1] = useState(250)
+  const [height2, setHeight2] = useState(220)
+  const [dachId, setDachId] = useState(rodzajeDachu[0].id)
   const [structureColor, setStructureColor] = useState(colors[0].id)
-  const [roofColor, setRoofColor] = useState(colors[0].id)
 
   // Step 2: lightingTypeId → subOptionId
   const [lighting, setLighting] = useState<Record<string, string>>({})
@@ -149,20 +189,20 @@ export function Configurator({ service }: { service: Service }) {
                 <>
                   {step === 1 && (
                     <Step1
-                      roofId={roofId}
-                      setRoofId={setRoofId}
-                      orientationId={orientationId}
-                      setOrientationId={setOrientationId}
+                      rodzajId={rodzajId}
+                      setRodzajId={setRodzajId}
                       width={width}
                       setWidth={setWidth}
                       depth={depth}
                       setDepth={setDepth}
-                      height={height}
-                      setHeight={setHeight}
+                      height1={height1}
+                      setHeight1={setHeight1}
+                      height2={height2}
+                      setHeight2={setHeight2}
+                      dachId={dachId}
+                      setDachId={setDachId}
                       structureColor={structureColor}
                       setStructureColor={setStructureColor}
-                      roofColor={roofColor}
-                      setRoofColor={setRoofColor}
                     />
                   )}
                   {step === 2 && (
@@ -276,77 +316,56 @@ function StepIndicator({ current }: { current: number }) {
 // ─── Step 1: Basic configuration ─────────────────────────────────────────────
 
 function Step1({
-  roofId, setRoofId,
-  orientationId, setOrientationId,
+  rodzajId, setRodzajId,
   width, setWidth,
   depth, setDepth,
-  height, setHeight,
+  height1, setHeight1,
+  height2, setHeight2,
+  dachId, setDachId,
   structureColor, setStructureColor,
-  roofColor, setRoofColor,
 }: {
-  roofId: string; setRoofId: (v: string) => void
-  orientationId: string; setOrientationId: (v: string) => void
+  rodzajId: string; setRodzajId: (v: string) => void
   width: number; setWidth: (v: number) => void
   depth: number; setDepth: (v: number) => void
-  height: number; setHeight: (v: number) => void
+  height1: number; setHeight1: (v: number) => void
+  height2: number; setHeight2: (v: number) => void
+  dachId: string; setDachId: (v: string) => void
   structureColor: string; setStructureColor: (v: string) => void
-  roofColor: string; setRoofColor: (v: string) => void
 }) {
-  const roof = roofTypes.find((r) => r.id === roofId)!
-  const orientation = orientations.find((o) => o.id === orientationId)!
+  const rodzaj = rodzajeZadaszen.find((r) => r.id === rodzajId)!
+  const dach = rodzajeDachu.find((d) => d.id === dachId)!
 
   return (
     <>
-      <ConfigGroup label="Rodzaj pergoli" value={roof.name}>
-        <div className="flex flex-col gap-2.5">
-          {roofTypes.map((r) => (
+      <ConfigGroup label="Rodzaj zadaszenia" value={rodzaj.name}>
+        <div className="flex gap-2.5">
+          {rodzajeZadaszen.map((r) => (
             <button
               key={r.id}
-              onClick={() => setRoofId(r.id)}
-              className={`flex items-center justify-between rounded-lg border-2 p-3 text-left transition-colors ${
-                roofId === r.id
-                  ? "border-[#DD3333] bg-[#DD3333]/5"
-                  : "border-border hover:border-muted-foreground"
-              }`}
-            >
-              <div>
-                <p className="text-sm font-semibold text-foreground">{r.name}</p>
-                <p className="text-xs text-muted-foreground">{r.desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </ConfigGroup>
-
-      <ConfigGroup label="Orientacja" value={orientation.name}>
-        <div className="flex gap-2.5">
-          {orientations.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => setOrientationId(o.id)}
+              onClick={() => setRodzajId(r.id)}
               className={`flex-1 rounded-lg border-2 p-3 text-center transition-colors ${
-                orientationId === o.id
+                rodzajId === r.id
                   ? "border-[#DD3333] bg-[#DD3333]/5"
                   : "border-border hover:border-muted-foreground"
               }`}
             >
-              <p className="text-sm font-semibold text-foreground">{o.name}</p>
-              <p className="text-xs text-muted-foreground">{o.desc}</p>
+              <p className="text-sm font-semibold text-foreground">{r.name}</p>
             </button>
           ))}
         </div>
       </ConfigGroup>
 
       <ConfigGroup
-        label="Wymiar konstrukcji"
-        value={`${(width / 100).toFixed(2)} × ${(depth / 100).toFixed(2)} × ${(height / 100).toFixed(2)} m`}
+        label="Wymiary"
+        value={`${(width / 100).toFixed(2)} × ${(depth / 100).toFixed(2)} m`}
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(
             [
               ["Szerokość", width, setWidth],
               ["Wysięg", depth, setDepth],
-              ["Wysokość", height, setHeight],
+              ["Wysokość 1 (wyższa)", height1, setHeight1],
+              ["Wysokość 2 (niższa)", height2, setHeight2],
             ] as [string, number, (v: number) => void][]
           ).map(([lbl, val, onChange]) => (
             <div key={lbl}>
@@ -368,17 +387,29 @@ function Step1({
         </div>
       </ConfigGroup>
 
+      <ConfigGroup label="Dach" value={dach.name}>
+        <div className="grid grid-cols-2 gap-2.5">
+          {rodzajeDachu.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => setDachId(d.id)}
+              className={`rounded-lg border-2 p-3 text-center transition-colors ${
+                dachId === d.id
+                  ? "border-[#DD3333] bg-[#DD3333]/5"
+                  : "border-border hover:border-muted-foreground"
+              }`}
+            >
+              <p className="text-sm font-semibold text-foreground">{d.name}</p>
+            </button>
+          ))}
+        </div>
+      </ConfigGroup>
+
       <GroupedColorGroup
         label="Kolor konstrukcji"
         colors={colors}
         value={structureColor}
         onChange={setStructureColor}
-      />
-      <GroupedColorGroup
-        label="Kolor dachu"
-        colors={colors}
-        value={roofColor}
-        onChange={setRoofColor}
       />
     </>
   )
@@ -398,7 +429,7 @@ function Step2Lighting({
       <p className="text-xs text-muted-foreground">
         Wybierz rodzaj oświetlenia.
       </p>
-      {lightingOptions.map((type) => {
+      {oswietlenieZadaszenia.map((type) => {
         const selected = lighting[type.id]
         return (
           <div key={type.id}>
@@ -507,7 +538,7 @@ function Step4Addons({
 }) {
   return (
     <div className="space-y-3">
-      {addons.map((addon) => {
+      {dodatkiZadaszenia.map((addon) => {
         const active = selectedAddons.includes(addon.id)
         return (
           <button

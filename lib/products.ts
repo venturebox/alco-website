@@ -19,7 +19,7 @@ export type ServiceCategory = {
 export const services: Service[] = [
   {
     slug: "pergola-jakas",
-    name: "Pergola jakaś",
+    name: "Pergola",
     category: "Pergole",
     tagline: "Regulowane lamele, sterowanie, integracja LED",
     image: "/images/realizacje/pergola_1.jpg",
@@ -115,6 +115,11 @@ export const roofTypes = [
   { id: "opaska-betonowa", name: "Opaska betonowa", desc: "Montaż na opasce betonowej", priceMod: 1800 },
 ]
 
+export const orientations = [
+  { id: "lewa", name: "Lewa", desc: "Orientacja w lewo", priceMod: 0 },
+  { id: "prawa", name: "Prawa", desc: "Orientacja w prawo", priceMod: 0 },
+]
+
 export type Addon = {
   id: string
   name: string
@@ -126,6 +131,96 @@ export const addons: Addon[] = [
   { id: "rain-sensor", name: "Czujnik deszczu", desc: "Automatyczne zamykanie lameli przy deszczu", price: 980 },
   { id: "wind-sensor", name: "Czujnik wiatru", desc: "Automatyczne zamykanie lameli przy wietrze", price: 980 },
   { id: "heater", name: "Promiennik ciepła", desc: "Ogrzewanie tarasu 2 kW", price: 1290 },
+]
+
+export type LightingSubOption = {
+  id: string
+  name: string
+}
+
+export type LightingOption = {
+  id: string
+  name: string
+  subOptions: LightingSubOption[]
+}
+
+export const lightingOptions: LightingOption[] = [
+  {
+    id: "liniowe-obwod",
+    name: "Liniowe po obwodzie",
+    subOptions: [
+      { id: "biale-zimny", name: "Białe – zimny" },
+      { id: "biale-neutralny", name: "Białe – neutralny" },
+      { id: "biale-ciepły", name: "Białe – ciepły" },
+      { id: "rgb", name: "RGB" },
+    ],
+  },
+  {
+    id: "liniowe-lamelach",
+    name: "Liniowe w lamelach",
+    subOptions: [
+      { id: "biale-zimny", name: "Białe – zimny" },
+      { id: "biale-neutralny", name: "Białe – neutralny" },
+      { id: "biale-ciepły", name: "Białe – ciepły" },
+      { id: "rgb", name: "RGB" },
+    ],
+  },
+  {
+    id: "punktowe-lamelach",
+    name: "Punktowe w lamelach",
+    subOptions: [
+      { id: "biale-zimny", name: "Białe – zimny" },
+      { id: "biale-neutralny", name: "Białe – neutralny" },
+      { id: "biale-ciepły", name: "Białe – ciepły" },
+    ],
+  },
+]
+
+export type SideEnclosureVariant = {
+  id: string
+  name: string
+}
+
+export type SideEnclosure = {
+  id: string
+  name: string
+  variants: SideEnclosureVariant[]
+}
+
+export const sideEnclosures: SideEnclosure[] = [
+  {
+    id: "stale",
+    name: "Stałe",
+    variants: [
+      { id: "wzor-1", name: "Wzór 1" },
+      { id: "wzor-2", name: "Wzór 2" },
+      { id: "wzor-3", name: "Wzór 3" },
+    ],
+  },
+  {
+    id: "przesuwne",
+    name: "Przesuwne",
+    variants: [
+      { id: "caloszklane", name: "Całoszklane" },
+      { id: "aluminiowe", name: "Aluminiowe" },
+    ],
+  },
+  {
+    id: "shuttersy",
+    name: "Shuttersy",
+    variants: [
+      { id: "pionowe", name: "Pionowe" },
+      { id: "poziome", name: "Poziome" },
+    ],
+  },
+  {
+    id: "zippy",
+    name: "Zippy",
+    variants: [
+      { id: "wzor-1", name: "Wzór 1" },
+      { id: "wzor-2", name: "Wzór 2" },
+    ],
+  },
 ]
 
 export function formatPLN(value: number) {

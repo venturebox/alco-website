@@ -31,53 +31,11 @@ const STEP_LABELS = ["Konfiguracja", "Oświetlenie", "Zabudowy boczne", "Dodatki
 
 // ─── Main Configurator ───────────────────────────────────────────────────────
 
-export function Configurator({ service }: { service: Service }) {
-  const [step, setStep] = useState(1)
+export function StolarkaConfigurator({ service }: { service: Service }) {
   const [submitted, setSubmitted] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
 
-  // Step 1
-  const [roofId, setRoofId] = useState(roofTypes[0].id)
-  const [orientationId, setOrientationId] = useState(orientations[0].id)
-  const [width, setWidth] = useState(400)
-  const [depth, setDepth] = useState(300)
-  const [height, setHeight] = useState(250)
-  const [structureColor, setStructureColor] = useState(colors[0].id)
-  const [roofColor, setRoofColor] = useState(colors[0].id)
-
-  // Step 2: lightingTypeId → subOptionId
-  const [lighting, setLighting] = useState<Record<string, string>>({})
-
-  // Step 3
-  const [enclosureTypeId, setEnclosureTypeId] = useState<string | null>(null)
-  const [enclosureVariantId, setEnclosureVariantId] = useState<string | null>(null)
-
-  // Step 4
-  const [selectedAddons, setSelectedAddons] = useState<string[]>([])
-
-  const mainImage = colorImageMap[structureColor] ?? gallery[activeImg]
-
-  function toggleLighting(typeId: string, subId: string) {
-    setLighting((prev) => {
-      if (prev[typeId] === subId) {
-        const next = { ...prev }
-        delete next[typeId]
-        return next
-      }
-      return { ...prev, [typeId]: subId }
-    })
-  }
-
-  function selectEnclosureType(typeId: string) {
-    setEnclosureTypeId((prev) => (prev === typeId ? null : typeId))
-    setEnclosureVariantId(null)
-  }
-
-  function toggleAddon(id: string) {
-    setSelectedAddons((prev) =>
-      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
-    )
-  }
+  const mainImage = gallery[activeImg]
 
   return (
     <div className="bg-background">
@@ -134,81 +92,23 @@ export function Configurator({ service }: { service: Service }) {
 
               <Separator className="my-4" />
 
-              <StepIndicator current={step} />
-
-              <Separator className="my-4" />
-
               {submitted ? (
                 <SuccessView
                   onReset={() => {
                     setSubmitted(false)
-                    setStep(1)
                   }}
                 />
               ) : (
                 <>
-                  {step === 1 && (
-                    <Step1
-                      roofId={roofId}
-                      setRoofId={setRoofId}
-                      orientationId={orientationId}
-                      setOrientationId={setOrientationId}
-                      width={width}
-                      setWidth={setWidth}
-                      depth={depth}
-                      setDepth={setDepth}
-                      height={height}
-                      setHeight={setHeight}
-                      structureColor={structureColor}
-                      setStructureColor={setStructureColor}
-                      roofColor={roofColor}
-                      setRoofColor={setRoofColor}
-                    />
-                  )}
-                  {step === 2 && (
-                    <Step2Lighting lighting={lighting} onToggle={toggleLighting} />
-                  )}
-                  {step === 3 && (
-                    <Step3Enclosure
-                      enclosureTypeId={enclosureTypeId}
-                      enclosureVariantId={enclosureVariantId}
-                      onTypeSelect={selectEnclosureType}
-                      onVariantSelect={setEnclosureVariantId}
-                    />
-                  )}
-                  {step === 4 && (
-                    <Step4Addons selectedAddons={selectedAddons} onToggle={toggleAddon} />
-                  )}
-                  {step === 5 && <Step5Form />}
+                  <Step5Form />
 
-                  {/* Navigation */}
                   <div className="mt-6 flex gap-3">
-                    {step > 1 && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setStep((s) => s - 1)}
-                        className="flex items-center gap-1.5"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Wstecz
-                      </Button>
-                    )}
-                    {step < 5 ? (
-                      <Button
-                        className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
-                        onClick={() => setStep((s) => s + 1)}
-                      >
-                        {step === 4 ? "Przejdź do wyceny" : "Dalej"}
-                        {step < 4 && <ChevronRight className="ml-1.5 h-4 w-4" />}
-                      </Button>
-                    ) : (
-                      <Button
-                        className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
-                        onClick={() => setSubmitted(true)}
-                      >
-                        Wyślij zapytanie
-                      </Button>
-                    )}
+                    <Button
+                      className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
+                      onClick={() => setSubmitted(true)}
+                    >
+                      Wyślij zapytanie
+                    </Button>
                   </div>
                 </>
               )}
