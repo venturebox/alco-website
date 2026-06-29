@@ -14,7 +14,6 @@ import {
   addons,
 } from "@/lib/products"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 
 const gallery = [
   "/images/realizacje/477714108_1086425523499056_3788069046120798046_n.jpg",
@@ -89,9 +88,9 @@ export function Configurator({ service }: { service: Service }) {
           <span className="text-foreground">{service.name}</span>
         </nav>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_1fr]">
-          {/* Gallery */}
-          <div>
+        <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-stretch">
+          {/* Gallery — natural height sets the row height */}
+          <div className="lg:w-[52.5%] lg:shrink-0">
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-secondary">
               <Image
                 src={mainImage || "/placeholder.svg"}
@@ -121,24 +120,22 @@ export function Configurator({ service }: { service: Service }) {
                 </button>
               ))}
             </div>
-            <div className="mt-8 hidden lg:block">
-              <ProductInfo />
-            </div>
           </div>
 
-          {/* Configurator panel */}
-          <div className="lg:sticky lg:top-20 lg:self-start">
-            <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          {/* Configurator — flex-1 fills remaining width; stretch makes it gallery-height */}
+          <div className="flex flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden">
+            {/* Fixed header */}
+            <div className="shrink-0 px-5 py-4 border-b border-border">
               <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                 {service.name}
               </h1>
+              <div className="mt-3">
+                <StepIndicator current={submitted ? 6 : step} onStepClick={submitted ? undefined : setStep} />
+              </div>
+            </div>
 
-              <Separator className="my-4" />
-
-              <StepIndicator current={submitted ? 6 : step} onStepClick={submitted ? undefined : setStep} />
-
-              <Separator className="my-4" />
-
+            {/* Scrollable step content */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
               {submitted ? (
                 <SuccessView
                   onReset={() => {
@@ -184,44 +181,48 @@ export function Configurator({ service }: { service: Service }) {
                     <Step4Addons selectedAddons={selectedAddons} onToggle={toggleAddon} />
                   )}
                   {step === 5 && <Step5Form />}
-
-                  {/* Navigation */}
-                  <div className="mt-6 flex gap-3">
-                    {step > 1 && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setStep((s) => s - 1)}
-                        className="flex items-center gap-1.5"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Wstecz
-                      </Button>
-                    )}
-                    {step < 5 ? (
-                      <Button
-                        className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
-                        onClick={() => setStep((s) => s + 1)}
-                      >
-                        {step === 4 ? "Przejdź do wyceny" : "Dalej"}
-                        {step < 4 && <ChevronRight className="ml-1.5 h-4 w-4" />}
-                      </Button>
-                    ) : (
-                      <Button
-                        className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
-                        onClick={() => setSubmitted(true)}
-                      >
-                        Wyślij zapytanie
-                      </Button>
-                    )}
-                  </div>
                 </>
               )}
             </div>
 
-            <div className="mt-8 lg:hidden">
-              <ProductInfo />
-            </div>
+            {/* Fixed navigation */}
+            {!submitted && (
+              <div className="shrink-0 border-t border-border px-5 py-3">
+                <div className="flex gap-3">
+                  {step > 1 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setStep((s) => s - 1)}
+                      className="flex items-center gap-1.5"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Wstecz
+                    </Button>
+                  )}
+                  {step < 5 ? (
+                    <Button
+                      className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
+                      onClick={() => setStep((s) => s + 1)}
+                    >
+                      {step === 4 ? "Przejdź do wyceny" : "Dalej"}
+                      {step < 4 && <ChevronRight className="ml-1.5 h-4 w-4" />}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
+                      onClick={() => setSubmitted(true)}
+                    >
+                      Wyślij zapytanie
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+
+        <div className="mt-8">
+          <ProductInfo />
         </div>
       </div>
     </div>
@@ -231,51 +232,44 @@ export function Configurator({ service }: { service: Service }) {
 // ─── Step Indicator ──────────────────────────────────────────────────────────
 
 function StepIndicator({ current, onStepClick }: { current: number; onStepClick?: (step: number) => void }) {
+  const currentLabel = STEP_LABELS[Math.min(current - 1, STEP_LABELS.length - 1)]
   return (
-    <div className="flex items-start">
-      {STEP_LABELS.map((label, i) => {
-        const num = i + 1
-        const done = num < current
-        const active = num === current
-        return (
-          <Fragment key={num}>
-            <div 
-              className={`flex min-w-0 flex-col items-center gap-2 ${onStepClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-              onClick={() => onStepClick?.(num)}
-            >
-              <div
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+    <div>
+      <div className="flex items-center">
+        {STEP_LABELS.map((_, i) => {
+          const num = i + 1
+          const done = num < current
+          const active = num === current
+          return (
+            <Fragment key={num}>
+              <button
+                onClick={() => onStepClick?.(num)}
+                disabled={!onStepClick}
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
                   done
                     ? "bg-[#DD3333] text-white"
                     : active
                     ? "border-2 border-[#DD3333] text-[#DD3333]"
                     : "border-2 border-border text-muted-foreground"
-                }`}
+                } ${onStepClick ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
               >
-                {done ? <Check className="h-3.5 w-3.5" /> : num}
-              </div>
-              <span
-                className={`max-w-[52px] text-center text-[10px] font-medium leading-tight transition-colors ${
-                  active
-                    ? "font-bold text-[#DD3333]"
-                    : done
-                    ? "text-foreground/70"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-            {i < STEP_LABELS.length - 1 && (
-              <div
-                className={`mx-1 mt-4 h-px flex-1 transition-colors ${
-                  done ? "bg-[#DD3333]" : "bg-border"
-                }`}
-              />
-            )}
-          </Fragment>
-        )
-      })}
+                {done ? <Check className="h-3 w-3" /> : num}
+              </button>
+              {i < STEP_LABELS.length - 1 && (
+                <div
+                  className={`h-px flex-1 mx-1.5 transition-colors ${
+                    done ? "bg-[#DD3333]" : "bg-border"
+                  }`}
+                />
+              )}
+            </Fragment>
+          )
+        })}
+      </div>
+      <p className="mt-1.5 text-[11px] text-muted-foreground">
+        <span className="font-semibold text-foreground">{currentLabel}</span>
+        {" "}&mdash; krok {Math.min(current, 5)} z 5
+      </p>
     </div>
   )
 }
@@ -303,52 +297,59 @@ function Step1({
   const orientation = orientations.find((o) => o.id === orientationId)!
 
   return (
-    <>
-      <ConfigGroup label="Rodzaj pergoli" value={roof.name}>
-        <div className="flex flex-col gap-2.5">
+    <div className="space-y-3">
+      <div>
+        <div className="mb-1.5 flex items-baseline justify-between">
+          <h3 className="text-xs font-bold text-foreground">Rodzaj pergoli</h3>
+          <span className="text-[10px] text-muted-foreground">{roof.name}</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {roofTypes.map((r) => (
             <button
               key={r.id}
               onClick={() => setRoofId(r.id)}
-              className={`flex items-center justify-between rounded-lg border-2 p-3 text-left transition-colors ${
+              className={`rounded-lg border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
                 roofId === r.id
-                  ? "border-[#DD3333] bg-[#DD3333]/5"
-                  : "border-border hover:border-muted-foreground"
+                  ? "border-[#DD3333] bg-[#DD3333]/5 text-foreground"
+                  : "border-border text-muted-foreground hover:border-muted-foreground"
               }`}
             >
-              <div>
-                <p className="text-sm font-semibold text-foreground">{r.name}</p>
-                <p className="text-xs text-muted-foreground">{r.desc}</p>
-              </div>
+              {r.name}
             </button>
           ))}
         </div>
-      </ConfigGroup>
+      </div>
 
-      <ConfigGroup label="Orientacja" value={orientation.name}>
-        <div className="flex gap-2.5">
+      <div>
+        <div className="mb-1.5 flex items-baseline justify-between">
+          <h3 className="text-xs font-bold text-foreground">Orientacja</h3>
+          <span className="text-[10px] text-muted-foreground">{orientation.name}</span>
+        </div>
+        <div className="flex gap-1.5">
           {orientations.map((o) => (
             <button
               key={o.id}
               onClick={() => setOrientationId(o.id)}
-              className={`flex-1 rounded-lg border-2 p-3 text-center transition-colors ${
+              className={`rounded-lg border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
                 orientationId === o.id
-                  ? "border-[#DD3333] bg-[#DD3333]/5"
-                  : "border-border hover:border-muted-foreground"
+                  ? "border-[#DD3333] bg-[#DD3333]/5 text-foreground"
+                  : "border-border text-muted-foreground hover:border-muted-foreground"
               }`}
             >
-              <p className="text-sm font-semibold text-foreground">{o.name}</p>
-              <p className="text-xs text-muted-foreground">{o.desc}</p>
+              {o.name}
             </button>
           ))}
         </div>
-      </ConfigGroup>
+      </div>
 
-      <ConfigGroup
-        label="Wymiar konstrukcji"
-        value={`${(width / 100).toFixed(2)} × ${(depth / 100).toFixed(2)} × ${(height / 100).toFixed(2)} m`}
-      >
-        <div className="grid grid-cols-3 gap-3">
+      <div>
+        <div className="mb-1.5 flex items-baseline justify-between">
+          <h3 className="text-xs font-bold text-foreground">Wymiar konstrukcji</h3>
+          <span className="text-[10px] text-muted-foreground">
+            {(width / 100).toFixed(2)} × {(depth / 100).toFixed(2)} × {(height / 100).toFixed(2)} m
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
           {(
             [
               ["Szerokość", width, setWidth],
@@ -358,36 +359,24 @@ function Step1({
           ).map(([lbl, val, onChange]) => (
             <div key={lbl}>
               <label className="text-[10px] font-medium text-muted-foreground">{lbl}</label>
-              <div className="relative mt-1">
+              <div className="relative mt-0.5">
                 <input
                   type="number"
                   step="50"
                   value={val}
                   onChange={(e) => onChange(Number(e.target.value))}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-8 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
+                  className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 pr-7 text-xs text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  cm
-                </span>
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">cm</span>
               </div>
             </div>
           ))}
         </div>
-      </ConfigGroup>
+      </div>
 
-      <GroupedColorGroup
-        label="Kolor konstrukcji"
-        colors={colors}
-        value={structureColor}
-        onChange={setStructureColor}
-      />
-      <GroupedColorGroup
-        label="Kolor dachu"
-        colors={colors}
-        value={roofColor}
-        onChange={setRoofColor}
-      />
-    </>
+      <GroupedColorGroup compact label="Kolor konstrukcji" colors={colors} value={structureColor} onChange={setStructureColor} />
+      <GroupedColorGroup compact label="Kolor dachu" colors={colors} value={roofColor} onChange={setRoofColor} />
+    </div>
   )
 }
 
@@ -664,11 +653,13 @@ function GroupedColorGroup({
   colors,
   value,
   onChange,
+  compact = false,
 }: {
   label: string
   colors: { id: string; name: string; swatch: string; group: string }[]
   value: string
   onChange: (id: string) => void
+  compact?: boolean
 }) {
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
 
@@ -685,7 +676,7 @@ function GroupedColorGroup({
 
   if (activeGroup === null) {
     return (
-      <div className="py-3 first:pt-0">
+      <div className={compact ? "py-1.5" : "py-3 first:pt-0"}>
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <h3 className="text-sm font-bold text-foreground">{label}</h3>
           <span className="text-xs font-medium text-muted-foreground">{selectedColor?.name}</span>
@@ -695,9 +686,9 @@ function GroupedColorGroup({
             <button
               key={g.group}
               onClick={() => setActiveGroup(g.group)}
-              className="flex shrink-0 items-center justify-center rounded border border-border px-3 py-1.5 transition-colors hover:border-[#DD3333]"
+              className="rounded-lg border-2 border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground whitespace-nowrap"
             >
-              <span className="whitespace-nowrap text-[10px] font-medium text-foreground">{g.label}</span>
+              {g.label}
             </button>
           ))}
         </div>
@@ -706,7 +697,7 @@ function GroupedColorGroup({
   }
 
   return (
-    <div className="py-3 first:pt-0">
+    <div className={compact ? "py-1.5" : "py-3 first:pt-0"}>
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <button
           onClick={() => setActiveGroup(null)}
@@ -818,13 +809,15 @@ function FileUpload() {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
-        className={`mt-1 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-5 transition-colors ${
+        className={`mt-1 flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border-2 border-dashed px-3 py-2.5 transition-colors ${
           dragging ? "border-[#DD3333] bg-[#DD3333]/5" : "border-border hover:border-muted-foreground"
         }`}
       >
-        <Upload className="h-6 w-6 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Przeciągnij pliki lub kliknij, aby dodać</p>
-        <p className="text-xs text-muted-foreground/60">PNG, JPG, PDF — max 5 plików</p>
+        <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <div>
+          <p className="text-xs text-muted-foreground">Przeciągnij pliki lub kliknij</p>
+          <p className="text-[10px] text-muted-foreground/60">PNG, JPG, PDF — max 5 plików</p>
+        </div>
         <input
           ref={inputRef}
           type="file"

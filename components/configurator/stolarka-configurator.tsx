@@ -1,20 +1,11 @@
 "use client"
 
-import { Fragment, useState, useRef, type DragEvent, type ChangeEvent, type ReactNode } from "react"
+import { Fragment, useState, useRef, type DragEvent, type ChangeEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Check, ChevronLeft, ChevronRight, Mail, Phone, Upload, X } from "lucide-react"
-import {
-  type Service,
-  colors,
-  roofTypes,
-  orientations,
-  lightingOptions,
-  sideEnclosures,
-  addons,
-} from "@/lib/products"
+import { Check, ChevronRight, Mail, Phone, Upload, X } from "lucide-react"
+import { type Service } from "@/lib/products"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 
 const gallery = [
   "/images/realizacje/477714108_1086425523499056_3788069046120798046_n.jpg",
@@ -22,11 +13,6 @@ const gallery = [
   "/images/realizacje/489290631_1132912682183673_6023384948808879899_n.jpg",
   "/images/realizacje/476193332_10069628386384881_7682148875562555677_n.jpg",
 ]
-
-const colorImageMap: Record<string, string> = {
-  bialy: "/images/realizacje/476193332_10069628386384881_7682148875562555677_n.jpg",
-  antracyt: "/images/realizacje/477714108_1086425523499056_3788069046120798046_n.jpg",
-}
 
 const STEP_LABELS = ["Konfiguracja", "Oświetlenie", "Zabudowy boczne", "Dodatki", "Wycena"]
 
@@ -47,9 +33,9 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
           <span className="text-foreground">{service.name}</span>
         </nav>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_1fr]">
-          {/* Gallery */}
-          <div>
+        <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-stretch">
+          {/* Gallery — natural height sets the row height */}
+          <div className="lg:w-[52.5%] lg:shrink-0">
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-secondary">
               <Image
                 src={mainImage || "/placeholder.svg"}
@@ -79,50 +65,45 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
                 </button>
               ))}
             </div>
-            <div className="mt-8 hidden lg:block">
-              <ProductInfo />
-            </div>
           </div>
 
-          {/* Configurator panel */}
-          <div className="lg:sticky lg:top-20 lg:self-start">
-            <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          {/* Configurator — flex-1 fills remaining width; stretch makes it gallery-height */}
+          <div className="flex flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden">
+            {/* Fixed header */}
+            <div className="shrink-0 px-5 py-4 border-b border-border">
               <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                 {service.name}
               </h1>
+              <div className="mt-3">
+                <StepIndicator current={submitted ? 6 : 5} />
+              </div>
+            </div>
 
-              <Separator className="my-4" />
-
-              <StepIndicator current={submitted ? 6 : 5} />
-
-              <Separator className="my-4" />
-
+            {/* Scrollable content */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
               {submitted ? (
-                <SuccessView
-                  onReset={() => {
-                    setSubmitted(false)
-                  }}
-                />
+                <SuccessView onReset={() => setSubmitted(false)} />
               ) : (
-                <>
-                  <Step5Form />
-
-                  <div className="mt-6 flex gap-3">
-                    <Button
-                      className="flex-1 bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
-                      onClick={() => setSubmitted(true)}
-                    >
-                      Wyślij zapytanie
-                    </Button>
-                  </div>
-                </>
+                <Step5Form />
               )}
             </div>
 
-            <div className="mt-8 lg:hidden">
-              <ProductInfo />
-            </div>
+            {/* Fixed footer */}
+            {!submitted && (
+              <div className="shrink-0 border-t border-border px-5 py-3">
+                <Button
+                  className="w-full bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
+                  onClick={() => setSubmitted(true)}
+                >
+                  Wyślij zapytanie
+                </Button>
+              </div>
+            )}
           </div>
+        </div>
+
+        <div className="mt-8">
+          <ProductInfo />
         </div>
       </div>
     </div>
@@ -131,21 +112,19 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
 
 // ─── Step Indicator ──────────────────────────────────────────────────────────
 
-function StepIndicator({ current, onStepClick }: { current: number; onStepClick?: (step: number) => void }) {
+function StepIndicator({ current }: { current: number }) {
+  const currentLabel = STEP_LABELS[Math.min(current - 1, STEP_LABELS.length - 1)]
   return (
-    <div className="flex items-start">
-      {STEP_LABELS.map((label, i) => {
-        const num = i + 1
-        const done = num < current
-        const active = num === current
-        return (
-          <Fragment key={num}>
-            <div 
-              className={`flex min-w-0 flex-col items-center gap-2 ${onStepClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-              onClick={() => onStepClick?.(num)}
-            >
+    <div>
+      <div className="flex items-center">
+        {STEP_LABELS.map((_, i) => {
+          const num = i + 1
+          const done = num < current
+          const active = num === current
+          return (
+            <Fragment key={num}>
               <div
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors cursor-default ${
                   done
                     ? "bg-[#DD3333] text-white"
                     : active
@@ -153,288 +132,23 @@ function StepIndicator({ current, onStepClick }: { current: number; onStepClick?
                     : "border-2 border-border text-muted-foreground"
                 }`}
               >
-                {done ? <Check className="h-3.5 w-3.5" /> : num}
+                {done ? <Check className="h-3 w-3" /> : num}
               </div>
-              <span
-                className={`max-w-[52px] text-center text-[10px] font-medium leading-tight transition-colors ${
-                  active
-                    ? "font-bold text-[#DD3333]"
-                    : done
-                    ? "text-foreground/70"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-            {i < STEP_LABELS.length - 1 && (
-              <div
-                className={`mx-1 mt-4 h-px flex-1 transition-colors ${
-                  done ? "bg-[#DD3333]" : "bg-border"
-                }`}
-              />
-            )}
-          </Fragment>
-        )
-      })}
-    </div>
-  )
-}
-
-// ─── Step 1: Basic configuration ─────────────────────────────────────────────
-
-function Step1({
-  roofId, setRoofId,
-  orientationId, setOrientationId,
-  width, setWidth,
-  depth, setDepth,
-  height, setHeight,
-  structureColor, setStructureColor,
-  roofColor, setRoofColor,
-}: {
-  roofId: string; setRoofId: (v: string) => void
-  orientationId: string; setOrientationId: (v: string) => void
-  width: number; setWidth: (v: number) => void
-  depth: number; setDepth: (v: number) => void
-  height: number; setHeight: (v: number) => void
-  structureColor: string; setStructureColor: (v: string) => void
-  roofColor: string; setRoofColor: (v: string) => void
-}) {
-  const roof = roofTypes.find((r) => r.id === roofId)!
-  const orientation = orientations.find((o) => o.id === orientationId)!
-
-  return (
-    <>
-      <ConfigGroup label="Rodzaj pergoli" value={roof.name}>
-        <div className="flex flex-col gap-2.5">
-          {roofTypes.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setRoofId(r.id)}
-              className={`flex items-center justify-between rounded-lg border-2 p-3 text-left transition-colors ${
-                roofId === r.id
-                  ? "border-[#DD3333] bg-[#DD3333]/5"
-                  : "border-border hover:border-muted-foreground"
-              }`}
-            >
-              <div>
-                <p className="text-sm font-semibold text-foreground">{r.name}</p>
-                <p className="text-xs text-muted-foreground">{r.desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </ConfigGroup>
-
-      <ConfigGroup label="Orientacja" value={orientation.name}>
-        <div className="flex gap-2.5">
-          {orientations.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => setOrientationId(o.id)}
-              className={`flex-1 rounded-lg border-2 p-3 text-center transition-colors ${
-                orientationId === o.id
-                  ? "border-[#DD3333] bg-[#DD3333]/5"
-                  : "border-border hover:border-muted-foreground"
-              }`}
-            >
-              <p className="text-sm font-semibold text-foreground">{o.name}</p>
-              <p className="text-xs text-muted-foreground">{o.desc}</p>
-            </button>
-          ))}
-        </div>
-      </ConfigGroup>
-
-      <ConfigGroup
-        label="Wymiar konstrukcji"
-        value={`${(width / 100).toFixed(2)} × ${(depth / 100).toFixed(2)} × ${(height / 100).toFixed(2)} m`}
-      >
-        <div className="grid grid-cols-3 gap-3">
-          {(
-            [
-              ["Szerokość", width, setWidth],
-              ["Wysięg", depth, setDepth],
-              ["Wysokość", height, setHeight],
-            ] as [string, number, (v: number) => void][]
-          ).map(([lbl, val, onChange]) => (
-            <div key={lbl}>
-              <label className="text-[10px] font-medium text-muted-foreground">{lbl}</label>
-              <div className="relative mt-1">
-                <input
-                  type="number"
-                  step="50"
-                  value={val}
-                  onChange={(e) => onChange(Number(e.target.value))}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-8 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  cm
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ConfigGroup>
-
-      <GroupedColorGroup
-        label="Kolor konstrukcji"
-        colors={colors}
-        value={structureColor}
-        onChange={setStructureColor}
-      />
-      <GroupedColorGroup
-        label="Kolor dachu"
-        colors={colors}
-        value={roofColor}
-        onChange={setRoofColor}
-      />
-    </>
-  )
-}
-
-// ─── Step 2: Lighting ─────────────────────────────────────────────────────────
-
-function Step2Lighting({
-  lighting,
-  onToggle,
-}: {
-  lighting: Record<string, string>
-  onToggle: (typeId: string, subId: string) => void
-}) {
-  return (
-    <div className="space-y-5">
-      <p className="text-xs text-muted-foreground">
-        Wybierz rodzaj oświetlenia.
-      </p>
-      {lightingOptions.map((type) => {
-        const selected = lighting[type.id]
-        return (
-          <div key={type.id}>
-            <div className="mb-2 flex items-baseline justify-between gap-2">
-              <h3 className="text-sm font-bold text-foreground">{type.name}</h3>
-              {selected && (
-                <span className="text-xs text-[#DD3333]">
-                  {type.subOptions.find((s) => s.id === selected)?.name}
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {type.subOptions.map((sub) => (
-                <button
-                  key={sub.id}
-                  onClick={() => onToggle(type.id, sub.id)}
-                  className={`rounded-lg border-2 px-3 py-1.5 text-xs font-medium transition-colors ${
-                    selected === sub.id
-                      ? "border-[#DD3333] bg-[#DD3333]/5 text-foreground"
-                      : "border-border text-muted-foreground hover:border-muted-foreground"
+              {i < STEP_LABELS.length - 1 && (
+                <div
+                  className={`h-px flex-1 mx-1.5 transition-colors ${
+                    done ? "bg-[#DD3333]" : "bg-border"
                   }`}
-                >
-                  {sub.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ─── Step 3: Side Enclosures ──────────────────────────────────────────────────
-
-function Step3Enclosure({
-  enclosureTypeId,
-  enclosureVariantId,
-  onTypeSelect,
-  onVariantSelect,
-}: {
-  enclosureTypeId: string | null
-  enclosureVariantId: string | null
-  onTypeSelect: (id: string) => void
-  onVariantSelect: (id: string | null) => void
-}) {
-  const selectedType = sideEnclosures.find((e) => e.id === enclosureTypeId)
-
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        Wybierz rodzaj zabudowy bocznej pergoli.
-      </p>
-      <div className="grid grid-cols-2 gap-2.5">
-        {sideEnclosures.map((enc) => (
-          <button
-            key={enc.id}
-            onClick={() => onTypeSelect(enc.id)}
-            className={`rounded-lg border-2 p-3 text-left transition-colors ${
-              enclosureTypeId === enc.id
-                ? "border-[#DD3333] bg-[#DD3333]/5"
-                : "border-border hover:border-muted-foreground"
-            }`}
-          >
-            <p className="text-sm font-semibold text-foreground">{enc.name}</p>
-          </button>
-        ))}
+                />
+              )}
+            </Fragment>
+          )
+        })}
       </div>
-
-      {selectedType && (
-        <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Wariant — {selectedType.name}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {selectedType.variants.map((v) => (
-              <button
-                key={v.id}
-                onClick={() =>
-                  onVariantSelect(enclosureVariantId === v.id ? null : v.id)
-                }
-                className={`rounded-lg border-2 px-3 py-1.5 text-xs font-medium transition-colors ${
-                  enclosureVariantId === v.id
-                    ? "border-[#DD3333] bg-[#DD3333]/5 text-foreground"
-                    : "border-border text-muted-foreground hover:border-muted-foreground"
-                }`}
-              >
-                {v.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Step 4: Addons ───────────────────────────────────────────────────────────
-
-function Step4Addons({
-  selectedAddons,
-  onToggle,
-}: {
-  selectedAddons: string[]
-  onToggle: (id: string) => void
-}) {
-  return (
-    <div className="space-y-3">
-      {addons.map((addon) => {
-        const active = selectedAddons.includes(addon.id)
-        return (
-          <button
-            key={addon.id}
-            onClick={() => onToggle(addon.id)}
-            className={`flex w-full items-center justify-between rounded-lg border-2 p-3 text-left transition-colors ${
-              active
-                ? "border-[#DD3333] bg-[#DD3333]/5"
-                : "border-border hover:border-muted-foreground"
-            }`}
-          >
-            <div>
-              <p className="text-sm font-semibold text-foreground">{addon.name}</p>
-              <p className="text-xs text-muted-foreground">{addon.desc}</p>
-            </div>
-            {active && <Check className="h-4 w-4 shrink-0 text-[#DD3333]" />}
-          </button>
-        )
-      })}
+      <p className="mt-1.5 text-[11px] text-muted-foreground">
+        <span className="font-semibold text-foreground">{currentLabel}</span>
+        {" "}&mdash; krok {Math.min(current, 5)} z 5
+      </p>
     </div>
   )
 }
@@ -472,7 +186,7 @@ function SuccessView({ onReset }: { onReset: () => void }) {
       </div>
 
       <Button variant="outline" className="mt-6" onClick={onReset}>
-        Skonfiguruj nową pergolę
+        Złóż nowe zapytanie
       </Button>
     </div>
   )
@@ -530,121 +244,7 @@ function Step5Form() {
   )
 }
 
-// ─── Shared sub-components ────────────────────────────────────────────────────
-
-function ConfigGroup({
-  label,
-  value,
-  children,
-}: {
-  label: string
-  value: string
-  children: ReactNode
-}) {
-  return (
-    <div className="py-4 first:pt-0">
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-bold text-foreground">{label}</h3>
-        <span className="text-xs font-medium text-muted-foreground">{value}</span>
-      </div>
-      {children}
-    </div>
-  )
-}
-
-const groupLabels: Record<string, string> = {
-  standard: "KOLORY RAL STANDARDOWE",
-  nonstandard: "KOLORY NIESTANDARDOWE",
-  decor: "DEKORY I INNE",
-}
-
-const groupOrder = ["standard", "nonstandard", "decor"]
-
-function GroupedColorGroup({
-  label,
-  colors,
-  value,
-  onChange,
-}: {
-  label: string
-  colors: { id: string; name: string; swatch: string; group: string }[]
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [activeGroup, setActiveGroup] = useState<string | null>(null)
-
-  const grouped = groupOrder
-    .map((g) => ({
-      group: g,
-      label: groupLabels[g],
-      items: colors.filter((c) => c.group === g),
-    }))
-    .filter((g) => g.items.length > 0)
-
-  const selectedColor = colors.find((c) => c.id === value)
-  const currentGroup = grouped.find((g) => g.group === activeGroup)
-
-  if (activeGroup === null) {
-    return (
-      <div className="py-3 first:pt-0">
-        <div className="mb-2 flex items-baseline justify-between gap-2">
-          <h3 className="text-sm font-bold text-foreground">{label}</h3>
-          <span className="text-xs font-medium text-muted-foreground">{selectedColor?.name}</span>
-        </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {grouped.map((g) => (
-            <button
-              key={g.group}
-              onClick={() => setActiveGroup(g.group)}
-              className="flex shrink-0 items-center justify-center rounded border border-border px-3 py-1.5 transition-colors hover:border-[#DD3333]"
-            >
-              <span className="whitespace-nowrap text-[10px] font-medium text-foreground">{g.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="py-3 first:pt-0">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
-        <button
-          onClick={() => setActiveGroup(null)}
-          className="flex items-center gap-1 text-sm font-bold text-foreground hover:text-[#DD3333]"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {label}
-        </button>
-        <span className="text-xs font-medium text-muted-foreground">{selectedColor?.name}</span>
-      </div>
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {currentGroup?.label}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {currentGroup?.items.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => onChange(c.id)}
-            aria-label={c.name}
-            className={`relative h-9 w-9 rounded-full border-2 transition-all ${
-              value === c.id ? "border-[#DD3333] ring-2 ring-[#DD3333]/30" : "border-border"
-            }`}
-            style={{ backgroundColor: c.swatch }}
-          >
-            {value === c.id && (
-              <Check
-                className={`absolute inset-0 m-auto h-3.5 w-3.5 ${
-                  c.id === "bialy" || c.id === "srebrny" ? "text-primary" : "text-primary-foreground"
-                }`}
-              />
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+// ─── Product Info ─────────────────────────────────────────────────────────────
 
 function ProductInfo() {
   return (
@@ -652,11 +252,9 @@ function ProductInfo() {
       <div className="py-4">
         <h3 className="font-heading font-bold">Opis produktu</h3>
         <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Pergola bioklimatyczna o konstrukcji z profili aluminiowych malowanych
-          proszkowo. Regulowane lamele dachowe pozwalają sterować nasłonecznieniem
-          i wentylacją, a wbudowane rynny odprowadzają wodę deszczową w słupach
-          nośnych. Idealna jako zadaszenie tarasu, strefy wypoczynku lub ogrodu
-          zimowego.
+          Stolarka aluminiowa — balustrady, drzwi i ogrodzenia z profili aluminiowych malowanych
+          proszkowo z wypełnieniem ze szkła hartowanego. Trwałe, nowoczesne i odporne na warunki
+          atmosferyczne rozwiązania do tarasu i posesji.
         </div>
       </div>
 
@@ -665,10 +263,10 @@ function ProductInfo() {
         <dl className="mt-2 divide-y divide-border text-sm">
           {[
             ["Materiał", "Aluminium EN AW-6063, lakier proszkowy"],
-            ["Maks. rozpiętość", "do 6 m bez podpory pośredniej"],
-            ["Obciążenie śniegiem", "do 150 kg/m²"],
-            ["Sterowanie", "Pilot / aplikacja / przełącznik ścienny"],
-            ["Odporność na wiatr", "klasa 6 (Beaufort)"],
+            ["Szkło", "Hartowane ESG 8–12 mm"],
+            ["Montaż", "Boczny lub górny"],
+            ["Gwarancja", "10 lat na konstrukcję"],
+            ["Realizacja", "3–5 tygodni"],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between gap-4 py-2.5">
               <dt className="text-muted-foreground">{k}</dt>
@@ -681,7 +279,7 @@ function ProductInfo() {
       <div className="border-t border-border py-4">
         <h3 className="font-heading font-bold">Dostawa i montaż</h3>
         <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Realizacja zamówienia wynosi 4–6 tygodni. Montaż wykonują nasze
+          Realizacja zamówienia wynosi 3–5 tygodni. Montaż wykonują nasze
           certyfikowane ekipy na terenie całej Polski. Po złożeniu zamówienia
           umawiamy bezpłatny pomiar, a następnie ustalamy termin montażu.
         </div>
@@ -719,13 +317,15 @@ function FileUpload() {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
-        className={`mt-1 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-5 transition-colors ${
+        className={`mt-1 flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border-2 border-dashed px-3 py-2.5 transition-colors ${
           dragging ? "border-[#DD3333] bg-[#DD3333]/5" : "border-border hover:border-muted-foreground"
         }`}
       >
-        <Upload className="h-6 w-6 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Przeciągnij pliki lub kliknij, aby dodać</p>
-        <p className="text-xs text-muted-foreground/60">PNG, JPG, PDF — max 5 plików</p>
+        <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <div>
+          <p className="text-xs text-muted-foreground">Przeciągnij pliki lub kliknij</p>
+          <p className="text-[10px] text-muted-foreground/60">PNG, JPG, PDF — max 5 plików</p>
+        </div>
         <input
           ref={inputRef}
           type="file"
