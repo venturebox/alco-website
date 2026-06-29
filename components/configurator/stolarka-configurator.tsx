@@ -2,6 +2,7 @@
 
 import { Fragment, useState, useRef, type DragEvent, type ChangeEvent, type ReactNode } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Check, ChevronLeft, ChevronRight, Mail, Phone, Upload, X } from "lucide-react"
 import {
   type Service,
@@ -41,7 +42,7 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
     <div className="bg-background">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>Strona główna</span>
+          <Link href="/" className="hover:text-foreground transition-colors">Strona główna</Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground">{service.name}</span>
         </nav>
@@ -63,7 +64,7 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
                 <button
                   key={src}
                   onClick={() => setActiveImg(i)}
-                  className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-colors ${
+                  className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-colors cursor-pointer ${
                     mainImage === src
                       ? "border-[#DD3333]"
                       : "border-border hover:border-muted-foreground"
@@ -89,6 +90,10 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
               <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                 {service.name}
               </h1>
+
+              <Separator className="my-4" />
+
+              <StepIndicator current={submitted ? 6 : 5} />
 
               <Separator className="my-4" />
 
@@ -126,7 +131,7 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
 
 // ─── Step Indicator ──────────────────────────────────────────────────────────
 
-function StepIndicator({ current }: { current: number }) {
+function StepIndicator({ current, onStepClick }: { current: number; onStepClick?: (step: number) => void }) {
   return (
     <div className="flex items-start">
       {STEP_LABELS.map((label, i) => {
@@ -135,7 +140,10 @@ function StepIndicator({ current }: { current: number }) {
         const active = num === current
         return (
           <Fragment key={num}>
-            <div className="flex min-w-0 flex-col items-center gap-2">
+            <div 
+              className={`flex min-w-0 flex-col items-center gap-2 ${onStepClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+              onClick={() => onStepClick?.(num)}
+            >
               <div
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                   done
