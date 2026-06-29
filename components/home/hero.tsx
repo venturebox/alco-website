@@ -6,10 +6,10 @@ import { GoogleReviews } from "@/components/home/google-reviews"
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-primary text-primary-foreground">
+    <section className="relative overflow-hidden bg-primary text-primary-foreground min-h-[85vh] flex items-center">
       <div className="absolute inset-0">
         <Image
-          src="/images/hero-pergola.png"
+          src="/images/pergola-aluminiu-exalco-2.webp"
           alt="Nowoczesna pergola bioklimatyczna z aluminium"
           fill
           priority
@@ -19,7 +19,7 @@ export function Hero() {
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-black/10" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28 lg:px-8 lg:py-36">
+      <div className="relative w-full mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-12 lg:gap-8 items-center">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur-sm">

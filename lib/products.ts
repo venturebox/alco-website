@@ -18,7 +18,7 @@ export type ServiceCategory = {
 
 export const services: Service[] = [
   {
-    slug: "pergola-jakas",
+    slug: "pergola",
     name: "Pergola",
     category: "Pergole",
     tagline: "Regulowane lamele, sterowanie, integracja LED",
