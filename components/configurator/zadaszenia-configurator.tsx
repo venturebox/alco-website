@@ -160,6 +160,34 @@ export function ZadaszeniaConfigurator({ service }: { service: Service }) {
 
     setIsSubmitting(true)
     try {
+      const selectedRodzaj = rodzajeZadaszen.find((r) => r.id === rodzajId)
+      const selectedDach = rodzajeDachu.find((d) => d.id === dachId)
+      const selectedStructureColor = colors.find((c) => c.id === structureColor)
+      const selectedEnclosureType = sideEnclosures.find((e) => e.id === enclosureTypeId)
+      const selectedEnclosureVariant = selectedEnclosureType?.variants.find((v) => v.id === enclosureVariantId)
+
+      const configuration = {
+        type: "zadaszenia",
+        rodzajZadaszenia: selectedRodzaj?.name ?? rodzajId,
+        wymiary: { szerokosc: width, wysieg: depth, wysokoscWyzsza: height1, wysokoscNizsza: height2 },
+        dach: selectedDach?.name ?? dachId,
+        kolorKonstrukcji: selectedStructureColor?.name ?? structureColor,
+        oswietlenie: Object.fromEntries(
+          oswietlenieZadaszenia.map((type) => {
+            const subId = lighting[type.id]
+            const subName = subId ? type.subOptions.find((s) => s.id === subId)?.name ?? null : null
+            return [type.id, subName]
+          })
+        ),
+        zabudowyBoczne: {
+          typ: selectedEnclosureType?.name ?? null,
+          wariant: selectedEnclosureVariant?.name ?? null,
+        },
+        dodatki: dodatkiZadaszenia
+          .filter((a) => selectedAddons.includes(a.id))
+          .map((a) => a.name),
+      }
+
       const response = await fetch("/api/lead/zadaszenia", {
         method: "POST",
         headers: {
@@ -170,6 +198,7 @@ export function ZadaszeniaConfigurator({ service }: { service: Service }) {
           email: email.trim(),
           phone: phone.trim(),
           description: message.trim() || undefined,
+          configuration,
         }),
       })
 
