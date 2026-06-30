@@ -22,7 +22,76 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
   const [submitted, setSubmitted] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
 
+  // Contact Form & CRM Integration States
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [message, setMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [successCode, setSuccessCode] = useState<string | null>(null)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
   const mainImage = gallery[activeImg]
+
+  async function handleLeadSubmit() {
+    setFormErrors({})
+    setSubmitError(null)
+
+    // Client-side validation
+    const errors: Record<string, string> = {}
+    if (!name.trim()) {
+      errors.name = "Imię i nazwisko jest wymagane."
+    } else if (name.trim().length < 2) {
+      errors.name = "Imię i nazwisko musi mieć co najmniej 2 znaki."
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email.trim()) {
+      errors.email = "Adres e-mail jest wymagany."
+    } else if (!emailRegex.test(email.trim())) {
+      errors.email = "Wprowadź poprawny adres e-mail."
+    }
+
+    const phoneRegex = /^[+]?[0-9\s-]{9,20}$/
+    if (!phone.trim()) {
+      errors.phone = "Numer telefonu jest wymagany."
+    } else if (!phoneRegex.test(phone.trim())) {
+      errors.phone = "Wprowadź poprawny numer telefonu (minimum 9 cyfr)."
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch("/api/lead/stolarka", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Błąd podczas przesyłania zapytania.")
+      }
+
+      setSuccessCode(data.code || data.quoteId || null)
+      setSubmitted(true)
+    } catch (err: any) {
+      setSubmitError(err.message || "Błąd połączenia z serwerem. Spróbuj ponownie.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="bg-background">
@@ -82,9 +151,32 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
             {/* Scrollable content */}
             <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
               {submitted ? (
-                <SuccessView onReset={() => setSubmitted(false)} />
+                <SuccessView
+                  code={successCode || undefined}
+                  onReset={() => {
+                    setSubmitted(false)
+                    setName("")
+                    setEmail("")
+                    setPhone("")
+                    setMessage("")
+                    setSuccessCode(null)
+                    setSubmitError(null)
+                    setFormErrors({})
+                  }}
+                />
               ) : (
-                <Step5Form />
+                <Step5Form
+                  name={name}
+                  setName={setName}
+                  email={email}
+                  setEmail={setEmail}
+                  phone={phone}
+                  setPhone={setPhone}
+                  message={message}
+                  setMessage={setMessage}
+                  errors={formErrors}
+                  submitError={submitError}
+                />
               )}
             </div>
 
@@ -93,9 +185,10 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
               <div className="shrink-0 border-t border-border px-5 py-3">
                 <Button
                   className="w-full bg-[#DD3333] text-white hover:bg-[#DD3333]/90"
-                  onClick={() => setSubmitted(true)}
+                  onClick={handleLeadSubmit}
+                  disabled={isSubmitting}
                 >
-                  Wyślij zapytanie
+                  {isSubmitting ? "Wysyłanie..." : "Wyślij zapytanie"}
                 </Button>
               </div>
             )}
@@ -155,7 +248,7 @@ function StepIndicator({ current }: { current: number }) {
 
 // ─── Success View ─────────────────────────────────────────────────────────────
 
-function SuccessView({ onReset }: { onReset: () => void }) {
+function SuccessView({ onReset, code }: { onReset: () => void; code?: string }) {
   return (
     <div className="flex flex-col items-center py-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#DD3333]/10">
@@ -164,6 +257,11 @@ function SuccessView({ onReset }: { onReset: () => void }) {
       <h2 className="mt-4 font-heading text-xl font-extrabold text-foreground">
         Zapytanie wysłane!
       </h2>
+      {code && (
+        <div className="mt-2 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-[#DD3333] border border-[#DD3333]/20">
+          Numer wyceny: {code}
+        </div>
+      )}
       <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-muted-foreground">
         Dziękujemy. Skontaktujemy się z Tobą w ciągu 24 godzin roboczych.
       </p>
@@ -194,7 +292,31 @@ function SuccessView({ onReset }: { onReset: () => void }) {
 
 // ─── Step 5: Contact Form ─────────────────────────────────────────────────────
 
-function Step5Form() {
+interface Step5FormProps {
+  name: string
+  setName: (v: string) => void
+  email: string
+  setEmail: (v: string) => void
+  phone: string
+  setPhone: (v: string) => void
+  message: string
+  setMessage: (v: string) => void
+  errors: Record<string, string>
+  submitError: string | null
+}
+
+function Step5Form({
+  name,
+  setName,
+  email,
+  setEmail,
+  phone,
+  setPhone,
+  message,
+  setMessage,
+  errors,
+  submitError,
+}: Step5FormProps) {
   return (
     <div className="space-y-4">
       <div>
@@ -203,14 +325,28 @@ function Step5Form() {
           Wyślij zapytanie, a nasz doradca skontaktuje się z Tobą w ciągu 24 godzin.
         </p>
       </div>
+
+      {submitError && (
+        <div className="rounded-lg bg-destructive/15 p-3 text-xs text-destructive border border-destructive/20 font-medium">
+          {submitError}
+        </div>
+      )}
+
       <div className="space-y-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Imię i nazwisko</label>
           <input
             type="text"
             placeholder="Jan Kowalski"
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={`mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:ring-1 ${
+              errors.name
+                ? "border-destructive focus:border-destructive focus:ring-destructive/30"
+                : "border-border focus:border-[#DD3333] focus:ring-[#DD3333]/30"
+            }`}
           />
+          {errors.name && <p className="mt-1 text-[10px] text-destructive font-medium">{errors.name}</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -218,16 +354,30 @@ function Step5Form() {
             <input
               type="email"
               placeholder="jan@example.com"
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:ring-1 ${
+                errors.email
+                  ? "border-destructive focus:border-destructive focus:ring-destructive/30"
+                  : "border-border focus:border-[#DD3333] focus:ring-[#DD3333]/30"
+              }`}
             />
+            {errors.email && <p className="mt-1 text-[10px] text-destructive font-medium">{errors.email}</p>}
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Telefon</label>
             <input
               type="tel"
               placeholder="+48 600 725 999"
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={`mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:ring-1 ${
+                errors.phone
+                  ? "border-destructive focus:border-destructive focus:ring-destructive/30"
+                  : "border-border focus:border-[#DD3333] focus:ring-[#DD3333]/30"
+              }`}
             />
+            {errors.phone && <p className="mt-1 text-[10px] text-destructive font-medium">{errors.phone}</p>}
           </div>
         </div>
         <div>
@@ -235,6 +385,8 @@ function Step5Form() {
           <textarea
             rows={2}
             placeholder="Dodatkowe pytania lub uwagi..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             className="mt-1 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
           />
         </div>
