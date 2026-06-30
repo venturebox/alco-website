@@ -365,7 +365,12 @@ function Step1({
                   step="50"
                   value={val}
                   onChange={(e) => onChange(Number(e.target.value))}
-                  className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 pr-7 text-xs text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
+                  onKeyDown={(e) => {
+                    if (e.key !== "ArrowUp" && e.key !== "ArrowDown" && e.key !== "Tab") {
+                      e.preventDefault()
+                    }
+                  }}
+                  className="w-full rounded-lg border border-border bg-background px-2.5 py-3.5 pr-7 text-xs text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">cm</span>
               </div>
