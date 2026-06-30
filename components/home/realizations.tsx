@@ -70,7 +70,7 @@ export function Realizations() {
             <button
               key={it.src}
               onClick={() => setActiveIdx(i)}
-              className="group relative overflow-hidden rounded-xl text-left"
+              className="group relative overflow-hidden rounded-xl text-left cursor-pointer"
             >
               <Image
                 src={it.src || "/placeholder.svg"}
