@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useState, useRef, type DragEvent, type ChangeEvent } from "react"
+import { Fragment, useState, useEffect, useRef, type DragEvent, type ChangeEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Check, ChevronRight, Mail, Phone, Upload, X } from "lucide-react"
@@ -21,6 +21,23 @@ const STEP_LABELS = ["Konfiguracja", "Oświetlenie", "Zabudowy boczne", "Dodatki
 export function StolarkaConfigurator({ service }: { service: Service }) {
   const [submitted, setSubmitted] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
+  const [dynamicGallery, setDynamicGallery] = useState<string[]>(gallery)
+
+  useEffect(() => {
+    fetch("https://woozy-gnat-639.eu-west-1.convex.site/api/gallery/Stolarka%20aluminiowa")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.images) {
+          const sorted = data.images
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((img: any) => img.url)
+          if (sorted.length > 0) {
+            setDynamicGallery(sorted)
+          }
+        }
+      })
+      .catch(err => console.error("Błąd pobierania galerii:", err))
+  }, [])
 
   // Contact Form & CRM Integration States
   const [name, setName] = useState("")
@@ -34,7 +51,7 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
   const [successCode, setSuccessCode] = useState<string | null>(null)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
-  const mainImage = gallery[activeImg]
+  const mainImage = dynamicGallery[activeImg]
 
   async function handleLeadSubmit() {
     setFormErrors({})
@@ -175,7 +192,7 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
               />
             </div>
             <div className="mt-3 grid grid-cols-4 gap-3">
-              {gallery.map((src, i) => (
+              {dynamicGallery.map((src, i) => (
                 <button
                   key={src}
                   onClick={() => setActiveImg(i)}

@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useState, useRef, type DragEvent, type ChangeEvent, type ReactNode } from "react"
+import { Fragment, useState, useEffect, useRef, type DragEvent, type ChangeEvent, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Check, ChevronLeft, ChevronRight, Mail, Phone, Upload, X } from "lucide-react"
@@ -35,6 +35,23 @@ export function Configurator({ service }: { service: Service }) {
   const [step, setStep] = useState(1)
   const [submitted, setSubmitted] = useState(false)
   const [activeImg, setActiveImg] = useState<number | null>(null)
+  const [dynamicGallery, setDynamicGallery] = useState<string[]>(gallery)
+
+  useEffect(() => {
+    fetch("https://woozy-gnat-639.eu-west-1.convex.site/api/gallery/Pergola")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.images) {
+          const sorted = data.images
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((img: any) => img.url)
+          if (sorted.length > 0) {
+            setDynamicGallery(sorted)
+          }
+        }
+      })
+      .catch(err => console.error("Błąd pobierania galerii:", err))
+  }, [])
 
   // Step 1
   const [roofId, setRoofId] = useState(roofTypes[0].id)
@@ -67,7 +84,7 @@ export function Configurator({ service }: { service: Service }) {
   const [successCode, setSuccessCode] = useState<string | null>(null)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
-  const mainImage = activeImg !== null ? gallery[activeImg] : (colorImageMap[structureColor] ?? gallery[0])
+  const mainImage = activeImg !== null ? dynamicGallery[activeImg] : (colorImageMap[structureColor] ?? dynamicGallery[0])
 
   async function handleLeadSubmit() {
     setFormErrors({})
@@ -102,6 +119,36 @@ export function Configurator({ service }: { service: Service }) {
 
     setIsSubmitting(true)
     try {
+      const selectedRoof = roofTypes.find((r) => r.id === roofId)
+      const selectedOrientation = orientations.find((o) => o.id === orientationId)
+      const selectedStructureColor = colors.find((c) => c.id === structureColor)
+      const selectedRoofColor = colors.find((c) => c.id === roofColor)
+      const selectedEnclosureType = sideEnclosures.find((e) => e.id === enclosureTypeId)
+      const selectedEnclosureVariant = selectedEnclosureType?.variants.find((v) => v.id === enclosureVariantId)
+
+      const configuration = {
+        type: "pergola",
+        rodzajPergoli: selectedRoof?.name ?? roofId,
+        orientacja: selectedOrientation?.name ?? orientationId,
+        wymiary: { szerokosc: width, wysieg: depth, wysokosc: height },
+        kolorKonstrukcji: selectedStructureColor?.name ?? structureColor,
+        kolorDachu: selectedRoofColor?.name ?? roofColor,
+        oswietlenie: Object.fromEntries(
+          lightingOptions.map((type) => {
+            const subId = lighting[type.id]
+            const subName = subId ? type.subOptions.find((s) => s.id === subId)?.name ?? null : null
+            return [type.id, subName]
+          })
+        ),
+        zabudowyBoczne: {
+          typ: selectedEnclosureType?.name ?? null,
+          wariant: selectedEnclosureVariant?.name ?? null,
+        },
+        dodatki: addons
+          .filter((a) => selectedAddons.includes(a.id))
+          .map((a) => a.name),
+      }
+
       const response = await fetch("/api/lead/pergola", {
         method: "POST",
         headers: {
@@ -112,6 +159,7 @@ export function Configurator({ service }: { service: Service }) {
           email: email.trim(),
           phone: phone.trim(),
           description: message.trim() || undefined,
+          configuration,
         }),
       })
 
@@ -230,7 +278,7 @@ export function Configurator({ service }: { service: Service }) {
               />
             </div>
             <div className="mt-3 grid grid-cols-4 gap-3">
-              {gallery.map((src, i) => (
+              {dynamicGallery.map((src, i) => (
                 <button
                   key={src}
                   onClick={() => setActiveImg(i)}
