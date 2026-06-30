@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useState, useEffect, useRef, type DragEvent, type ChangeEvent } from "react"
+import { useState, useEffect, useRef, type DragEvent, type ChangeEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Check, ChevronRight, Mail, Phone, Upload, X } from "lucide-react"
@@ -13,8 +13,6 @@ const gallery = [
   "/images/realizacje/489290631_1132912682183673_6023384948808879899_n.jpg",
   "/images/realizacje/476193332_10069628386384881_7682148875562555677_n.jpg",
 ]
-
-const STEP_LABELS = ["Konfiguracja", "Oświetlenie", "Zabudowy boczne", "Dodatki", "Wycena"]
 
 // ─── Main Configurator ───────────────────────────────────────────────────────
 
@@ -220,9 +218,6 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
               <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                 {service.name}
               </h1>
-              <div className="mt-3">
-                <StepIndicator current={submitted ? 6 : 5} />
-              </div>
             </div>
 
             {/* Scrollable content */}
@@ -281,49 +276,6 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
           <ProductInfo />
         </div>
       </div>
-    </div>
-  )
-}
-
-// ─── Step Indicator ──────────────────────────────────────────────────────────
-
-function StepIndicator({ current }: { current: number }) {
-  const currentLabel = STEP_LABELS[Math.min(current - 1, STEP_LABELS.length - 1)]
-  return (
-    <div>
-      <div className="flex items-center">
-        {STEP_LABELS.map((_, i) => {
-          const num = i + 1
-          const done = num < current
-          const active = num === current
-          return (
-            <Fragment key={num}>
-              <div
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors cursor-default ${
-                  done
-                    ? "bg-[#DD3333] text-white"
-                    : active
-                    ? "border-2 border-[#DD3333] text-[#DD3333]"
-                    : "border-2 border-border text-muted-foreground"
-                }`}
-              >
-                {done ? <Check className="h-3 w-3" /> : num}
-              </div>
-              {i < STEP_LABELS.length - 1 && (
-                <div
-                  className={`h-px flex-1 mx-1.5 transition-colors ${
-                    done ? "bg-[#DD3333]" : "bg-border"
-                  }`}
-                />
-              )}
-            </Fragment>
-          )
-        })}
-      </div>
-      <p className="mt-1.5 text-[11px] text-muted-foreground">
-        <span className="font-semibold text-foreground">{currentLabel}</span>
-        {" "}&mdash; krok {Math.min(current, 5)} z 5
-      </p>
     </div>
   )
 }
