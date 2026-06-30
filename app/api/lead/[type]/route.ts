@@ -34,7 +34,7 @@ export async function POST(
 
   try {
     const body = await request.json()
-    const { name, email, phone } = body
+    const { name, email, phone, description } = body
 
     const errors: Record<string, string> = {}
 
@@ -70,6 +70,7 @@ export async function POST(
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim().replace(/\s+/g, ""), // send clean phone number
+        description: description?.trim() || undefined,
       }),
     })
 

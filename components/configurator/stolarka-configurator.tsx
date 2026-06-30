@@ -27,6 +27,8 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [message, setMessage] = useState("")
+  const [files, setFiles] = useState<File[]>([])
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successCode, setSuccessCode] = useState<string | null>(null)
@@ -76,6 +78,7 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
           name: name.trim(),
           email: email.trim(),
           phone: phone.trim(),
+          description: message.trim() || undefined,
         }),
       })
 
@@ -85,6 +88,63 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
       }
 
       setSuccessCode(data.code || data.quoteId || null)
+
+      // Przesyłanie załączników
+      if (files.length > 0) {
+        const quoteId = data.quoteId
+        const uploadToken = data.uploadToken
+
+        for (const file of files) {
+          setUploadProgress((prev) => ({ ...prev, [file.name]: 0 }))
+
+          const sessionRes = await fetch("/api/lead/upload-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quoteId,
+              uploadToken,
+              fileName: file.name,
+              fileSize: file.size,
+            }),
+          })
+
+          const sessionData = await sessionRes.json()
+          if (!sessionRes.ok || !sessionData.success) {
+            throw new Error(`Nie udało się przygotować wysyłki dla pliku ${file.name}: ${sessionData.error}`)
+          }
+
+          const uploadUrl = sessionData.uploadUrl
+
+          // Wysyłanie pliku bezpośrednio na SharePoint URL (PUT)
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest()
+            xhr.open("PUT", uploadUrl, true)
+            xhr.setRequestHeader("Content-Range", `bytes 0-${file.size - 1}/${file.size}`)
+            xhr.setRequestHeader("Content-Length", `${file.size}`)
+
+            xhr.upload.onprogress = (event) => {
+              if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100)
+                setUploadProgress((prev) => ({ ...prev, [file.name]: percent }))
+              }
+            }
+
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve()
+              } else {
+                reject(new Error(`Błąd wysyłania ${file.name}: status ${xhr.status}`))
+              }
+            }
+
+            xhr.onerror = () => reject(new Error(`Błąd połączenia dla pliku ${file.name}`))
+            xhr.send(file)
+          })
+        }
+      }
+
       setSubmitted(true)
     } catch (err: any) {
       setSubmitError(err.message || "Błąd połączenia z serwerem. Spróbuj ponownie.")
@@ -159,6 +219,8 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
                     setEmail("")
                     setPhone("")
                     setMessage("")
+                    setFiles([])
+                    setUploadProgress({})
                     setSuccessCode(null)
                     setSubmitError(null)
                     setFormErrors({})
@@ -176,6 +238,9 @@ export function StolarkaConfigurator({ service }: { service: Service }) {
                   setMessage={setMessage}
                   errors={formErrors}
                   submitError={submitError}
+                  files={files}
+                  setFiles={setFiles}
+                  uploadProgress={uploadProgress}
                 />
               )}
             </div>
@@ -303,6 +368,9 @@ interface Step5FormProps {
   setMessage: (v: string) => void
   errors: Record<string, string>
   submitError: string | null
+  files: File[]
+  setFiles: (files: File[]) => void
+  uploadProgress: Record<string, number>
 }
 
 function Step5Form({
@@ -316,6 +384,9 @@ function Step5Form({
   setMessage,
   errors,
   submitError,
+  files,
+  setFiles,
+  uploadProgress,
 }: Step5FormProps) {
   return (
     <div className="space-y-4">
@@ -390,7 +461,11 @@ function Step5Form({
             className="mt-1 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-[#DD3333] focus:ring-1 focus:ring-[#DD3333]/30"
           />
         </div>
-        <FileUpload />
+        <FileUpload
+          files={files}
+          onChange={setFiles}
+          uploadProgress={uploadProgress}
+        />
       </div>
     </div>
   )
@@ -440,30 +515,65 @@ function ProductInfo() {
   )
 }
 
-function FileUpload() {
-  const [files, setFiles] = useState<File[]>([])
+// ─── File Upload Component ───────────────────────────────────────────────────
+
+interface FileUploadProps {
+  files: File[]
+  onChange: (files: File[]) => void
+  uploadProgress?: Record<string, number>
+}
+
+function FileUpload({ files, onChange, uploadProgress }: FileUploadProps) {
   const [dragging, setDragging] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const allowedExtensions = ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "zip", "rar", "dxf"]
+  const maxSizeBytes = 20 * 1024 * 1024 // 20 MB
+
+  function validateAndFilterFiles(incoming: File[]): File[] {
+    setError(null)
+    const valid: File[] = []
+    
+    for (const f of incoming) {
+      const ext = f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase()
+      if (!allowedExtensions.includes(ext)) {
+        setError(`Niedozwolony format: .${ext}. Dozwolone: ${allowedExtensions.join(", ")}`)
+        continue
+      }
+      if (f.size > maxSizeBytes) {
+        setError(`Plik jest za duży: ${f.name} (maks. 20 MB)`)
+        continue
+      }
+      valid.push(f)
+    }
+    return valid
+  }
 
   function handleDrop(e: DragEvent) {
     e.preventDefault()
     setDragging(false)
     const dropped = Array.from(e.dataTransfer.files)
-    setFiles((prev) => [...prev, ...dropped].slice(0, 5))
+    const valid = validateAndFilterFiles(dropped)
+    onChange([...files, ...valid].slice(0, 5))
   }
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || [])
-    setFiles((prev) => [...prev, ...selected].slice(0, 5))
+    const valid = validateAndFilterFiles(selected)
+    onChange([...files, ...valid].slice(0, 5))
   }
 
   function removeFile(i: number) {
-    setFiles((prev) => prev.filter((_, idx) => idx !== i))
+    onChange(files.filter((_, idx) => idx !== i))
   }
 
   return (
     <div>
-      <label className="text-xs font-medium text-muted-foreground">Załączniki (opcjonalnie)</label>
+      <div className="flex justify-between items-baseline">
+        <label className="text-xs font-medium text-muted-foreground">Załączniki (opcjonalnie)</label>
+        {error && <span className="text-[10px] text-destructive font-medium">{error}</span>}
+      </div>
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
@@ -476,27 +586,43 @@ function FileUpload() {
         <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div>
           <p className="text-xs text-muted-foreground">Przeciągnij pliki lub kliknij</p>
-          <p className="text-[10px] text-muted-foreground/60">PNG, JPG, PDF — max 5 plików</p>
+          <p className="text-[10px] text-muted-foreground/60">PDF, JPG, PNG, DOC, XLS, ZIP, DXF — max 5 plików (maks. 20MB)</p>
         </div>
         <input
           ref={inputRef}
           type="file"
           multiple
-          accept=".png,.jpg,.jpeg,.pdf"
+          accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.dxf"
           onChange={handleChange}
           className="hidden"
         />
       </div>
       {files.length > 0 && (
         <ul className="mt-2 space-y-1.5">
-          {files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center justify-between rounded-lg bg-secondary px-3 py-1.5 text-sm">
-              <span className="truncate text-muted-foreground">{f.name}</span>
-              <button onClick={() => removeFile(i)} aria-label="Usuń plik">
-                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-              </button>
-            </li>
-          ))}
+          {files.map((f, i) => {
+            const progress = uploadProgress?.[f.name]
+            return (
+              <li key={`${f.name}-${i}`} className="flex flex-col gap-1 rounded-lg bg-secondary px-3 py-1.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="truncate text-muted-foreground">{f.name}</span>
+                  {progress === undefined ? (
+                    <button type="button" onClick={() => removeFile(i)} aria-label="Usuń plik">
+                      <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-[#DD3333] font-semibold">
+                      {progress === 100 ? "Przesłano" : `Wysyłanie: ${progress}%`}
+                    </span>
+                  )}
+                </div>
+                {progress !== undefined && progress < 100 && (
+                  <div className="h-1 w-full bg-border rounded-full overflow-hidden mt-1">
+                    <div className="bg-[#DD3333] h-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
