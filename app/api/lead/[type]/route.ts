@@ -76,6 +76,20 @@ export async function POST(
     if (!response.ok) {
       const errorText = await response.text()
       console.error(`CRM API error status ${response.status}:`, errorText)
+
+      // Spróbuj wyciągnąć czytelny błąd z odpowiedzi Convex
+      try {
+        const errorJson = JSON.parse(errorText)
+        if (errorJson && errorJson.error) {
+          return NextResponse.json(
+            { error: errorJson.error },
+            { status: response.status }
+          )
+        }
+      } catch {
+        // Ignoruj błąd parsowania
+      }
+
       return NextResponse.json(
         { error: "Błąd połączenia z systemem CRM." },
         { status: response.status }
